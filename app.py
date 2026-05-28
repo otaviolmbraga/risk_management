@@ -40,7 +40,7 @@ LAMBDAS = [0.06, 0.07, 0.08]
 LAMBDA_COLORS = {"6%": "#5B8DEF", "7%": "#F5A623", "8%": "#4CD964"}
 TOTAL_COLOR = "#1A1A2E"
 FILL_COLOR = "#1A1A2E"
-PI_MIN, PI_MAX, PI_POINTS = 0.03, 0.12, 600
+PI_MIN, PI_MAX, PI_POINTS = 0.03, 0.10, 600
 
 # ---------------------------------------------------------------------------
 # Page config

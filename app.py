@@ -9,31 +9,41 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import matplotlib.patheffects as pe
 from matplotlib import rcParams
 
 # ---------------------------------------------------------------------------
 # Style
 # ---------------------------------------------------------------------------
+BG = "#ffffff"
+GRID_CLR = "#f0f0f0"
+
 rcParams.update({
     "font.family": "sans-serif",
     "font.sans-serif": ["Inter", "Helvetica Neue", "Arial", "sans-serif"],
     "axes.spines.top": False,
     "axes.spines.right": False,
-    "axes.edgecolor": "#cccccc",
-    "axes.linewidth": 0.6,
-    "xtick.color": "#555555",
-    "ytick.color": "#555555",
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
-    "axes.labelsize": 11,
-    "axes.labelcolor": "#333333",
-    "axes.titlesize": 13,
-    "axes.titleweight": "bold",
-    "figure.facecolor": "#fafafa",
-    "axes.facecolor": "#fafafa",
-    "grid.color": "#e0e0e0",
-    "grid.linewidth": 0.5,
-    "grid.linestyle": "--",
+    "axes.spines.left": False,
+    "axes.edgecolor": "#dddddd",
+    "axes.linewidth": 0.4,
+    "xtick.color": "#888888",
+    "ytick.color": "#888888",
+    "xtick.labelsize": 9.5,
+    "ytick.labelsize": 9.5,
+    "xtick.major.size": 0,
+    "ytick.major.size": 0,
+    "xtick.major.pad": 8,
+    "ytick.major.pad": 8,
+    "axes.labelsize": 10.5,
+    "axes.labelcolor": "#555555",
+    "axes.titlesize": 14,
+    "axes.titleweight": "600",
+    "axes.titlepad": 18,
+    "figure.facecolor": BG,
+    "axes.facecolor": BG,
+    "grid.color": GRID_CLR,
+    "grid.linewidth": 0.6,
+    "grid.linestyle": "-",
 })
 
 LAMBDAS = [0.06, 0.07, 0.08]
@@ -41,6 +51,8 @@ LAMBDA_COLORS = {"6%": "#5B8DEF", "7%": "#F5A623", "8%": "#4CD964"}
 TOTAL_COLOR = "#1A1A2E"
 HEDGE_COLOR = "#9B59B6"
 COMBINED_COLOR = "#E74C3C"
+GREEN_FILL = "#34C759"
+RED_FILL = "#FF3B30"
 PI_MIN, PI_MAX, PI_POINTS = 0.03, 0.10, 600
 
 # ---------------------------------------------------------------------------
@@ -127,7 +139,6 @@ def breakeven_single(N, P, lam, cf):
 
 
 def breakeven_numerical(curve, pi):
-    """First zero-crossing (positive → negative) via linear interpolation."""
     sign_changes = np.where(np.diff(np.sign(curve)) < 0)[0]
     if len(sign_changes) == 0:
         return None
@@ -136,42 +147,72 @@ def breakeven_numerical(curve, pi):
     return pi[idx] + t * (pi[idx + 1] - pi[idx])
 
 
-def plot_profit(ax, pi, profit, *, label, color, show_fill=True):
-    """Draw a profit line with optional green/red shading."""
-    if show_fill:
-        ax.fill_between(pi, profit, 0, where=(profit >= 0),
-                        color="#4CD964", alpha=0.12, interpolate=True)
-        ax.fill_between(pi, profit, 0, where=(profit < 0),
-                        color="#FF3B30", alpha=0.10, interpolate=True)
-    ax.plot(pi, profit, color=color, linewidth=2.4, zorder=5, label=label)
+def _fmt_brl(x, _):
+    """Format y-axis as R$ with thousands separator."""
+    if abs(x) >= 1_000_000:
+        return f"R$ {x/1e6:.1f}M"
+    if abs(x) >= 1_000:
+        return f"R$ {x/1e3:.0f}k"
+    return f"R$ {x:,.0f}"
 
 
-def decorate_ax(ax, pi, title):
-    """Common axis formatting."""
-    ax.axhline(0, color="#999999", linewidth=0.7, linestyle="-", zorder=2)
+def make_figure():
+    fig, ax = plt.subplots(figsize=(11, 4.8))
+    fig.subplots_adjust(left=0.08, right=0.97, top=0.88, bottom=0.13)
+    return fig, ax
+
+
+def draw_fill(ax, pi, profit):
+    """Green/red shading around zero."""
+    ax.fill_between(pi, profit, 0, where=(profit >= 0),
+                    color=GREEN_FILL, alpha=0.08, interpolate=True)
+    ax.fill_between(pi, profit, 0, where=(profit < 0),
+                    color=RED_FILL, alpha=0.08, interpolate=True)
+
+
+def draw_lambda_markers(ax):
+    """Vertical dashed lines + labels at each teto."""
+    ymin, ymax = ax.get_ylim()
     for lam in LAMBDAS:
         lab = f"{lam:.0%}"
-        ax.axvline(lam, color=LAMBDA_COLORS[lab], linewidth=1.2,
-                   linestyle="--", alpha=0.7, zorder=3)
-        y_pos = ax.get_ylim()[1] * 0.95
-        ax.text(lam + 0.001, y_pos, f"Teto {lab}",
-                color=LAMBDA_COLORS[lab], fontsize=9, fontweight="bold",
-                va="top", ha="left", alpha=0.85)
-    ax.set_xlabel("Inflação Realizada (π)")
-    ax.set_ylabel("Lucro (R$)")
+        clr = LAMBDA_COLORS[lab]
+        ax.axvline(lam, color=clr, linewidth=0.9, linestyle="--",
+                   alpha=0.55, zorder=3)
+        ax.text(lam, ymax, f" Teto {lab}",
+                color=clr, fontsize=8.5, fontweight="600",
+                va="bottom", ha="left", alpha=0.8,
+                path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
+
+
+def style_ax(ax, title):
+    """Common axis decoration."""
+    ax.axhline(0, color="#cccccc", linewidth=0.6, zorder=2)
+    ax.set_xlabel("Inflação Realizada (π)", labelpad=10)
+    ax.set_ylabel("")
     ax.xaxis.set_major_formatter(mtick.PercentFormatter(1.0, 0))
-    ax.yaxis.set_major_formatter(
-        mtick.FuncFormatter(lambda x, _: f"R$ {x:,.0f}".replace(",", "."))
-    )
+    ax.yaxis.set_major_formatter(mtick.FuncFormatter(_fmt_brl))
     ax.set_xlim(PI_MIN, PI_MAX)
-    ax.grid(True, axis="y", zorder=0)
-    ax.set_title(title)
-    ax.legend(loc="upper right", frameon=True, fancybox=True, framealpha=0.9,
-              edgecolor="#dddddd", fontsize=9)
+    ax.grid(True, axis="both", zorder=0)
+    ax.set_title(title, loc="left")
+    draw_lambda_markers(ax)
+
+
+def draw_breakeven_dot(ax, pi, curve):
+    """Place a small dot + annotation at the breakeven crossing."""
+    be = breakeven_numerical(curve, pi)
+    if be is not None:
+        ax.plot(be, 0, "o", color="#FF3B30", markersize=6, zorder=10,
+                markeredgecolor="white", markeredgewidth=1.5)
+        ax.annotate(f"Break-even\n{be:.2%}",
+                    xy=(be, 0), xytext=(be + 0.003, ax.get_ylim()[0] * 0.35),
+                    fontsize=8.5, color="#FF3B30", fontweight="600",
+                    arrowprops=dict(arrowstyle="-", color="#FF3B30",
+                                    lw=0.8, connectionstyle="arc3,rad=0.15"),
+                    ha="left", va="center",
+                    path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
 
 
 def summary_table(params, compound_factor, V, pi, extra_curve=None):
-    """Render the breakeven table. If extra_curve is given, use it for total."""
     curve = extra_curve if extra_curve is not None else total_profit
     rows = []
     for label, p in params.items():
@@ -201,11 +242,12 @@ tab_sem, tab_linear, tab_binario = st.tabs([
 
 # ---- Tab 1: Sem Hedge ----------------------------------------------------
 with tab_sem:
-    fig, ax = plt.subplots(figsize=(11, 5))
-    plot_profit(ax, pi, total_profit, label="Lucro Total da Carteira",
-                color=TOTAL_COLOR)
-    decorate_ax(ax, pi, "Lucro Total vs. Inflação Realizada")
-    fig.tight_layout()
+    fig, ax = make_figure()
+    draw_fill(ax, pi, total_profit)
+    ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=2.6, zorder=5,
+            solid_capstyle="round")
+    style_ax(ax, "Lucro da Carteira vs. Inflação Realizada")
+    draw_breakeven_dot(ax, pi, total_profit)
     st.pyplot(fig)
     plt.close(fig)
 
@@ -239,30 +281,41 @@ with tab_linear:
     hedge_payoff = notional * (pi - pi_bar)
     combined = total_profit + hedge_payoff
 
-    fig, ax = plt.subplots(figsize=(11, 5))
+    fig, ax = make_figure()
 
-    # Unhedged – thin, muted
-    ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=1.2, alpha=0.35,
-            linestyle="--", zorder=4, label="Sem Hedge")
+    # Unhedged – thin ghost line
+    ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=1.4, alpha=0.25,
+            linestyle="--", zorder=4, label="Sem Hedge",
+            solid_capstyle="round")
 
-    # Hedge payoff alone – thin purple
-    ax.plot(pi, hedge_payoff, color=HEDGE_COLOR, linewidth=1.2, alpha=0.5,
-            linestyle=":", zorder=4, label="Payoff do Hedge")
+    # Hedge payoff – subtle
+    ax.plot(pi, hedge_payoff, color=HEDGE_COLOR, linewidth=1.2, alpha=0.4,
+            linestyle=":", zorder=4, label="Payoff do Hedge",
+            solid_capstyle="round")
 
-    # Combined – bold with fill
-    plot_profit(ax, pi, combined, label="Lucro com Hedge",
-                color=COMBINED_COLOR)
+    # Combined – primary
+    draw_fill(ax, pi, combined)
+    ax.plot(pi, combined, color=COMBINED_COLOR, linewidth=2.6, zorder=5,
+            label="Lucro com Hedge", solid_capstyle="round")
 
-    # Mark pi_bar
-    ax.axvline(pi_bar, color=HEDGE_COLOR, linewidth=1.2, linestyle="--",
-               alpha=0.6, zorder=3)
-    y_bot = ax.get_ylim()[0] * 0.9 if ax.get_ylim()[0] < 0 else 0
-    ax.text(pi_bar + 0.001, ax.get_ylim()[1] * 0.85,
-            f"π̄ = {pi_bar:.2%}", color=HEDGE_COLOR, fontsize=9,
-            fontweight="bold", va="top", ha="left", alpha=0.85)
+    style_ax(ax, "Lucro com Hedge Linear vs. Inflação Realizada")
 
-    decorate_ax(ax, pi, "Lucro com Hedge Linear vs. Inflação Realizada")
-    fig.tight_layout()
+    # π̄ marker
+    ax.axvline(pi_bar, color=HEDGE_COLOR, linewidth=0.9, linestyle="--",
+               alpha=0.5, zorder=3)
+    ymax = ax.get_ylim()[1]
+    ax.text(pi_bar, ymax, f" π̄ = {pi_bar:.2%}",
+            color=HEDGE_COLOR, fontsize=8.5, fontweight="600",
+            va="bottom", ha="left", alpha=0.8,
+            path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
+
+    draw_breakeven_dot(ax, pi, combined)
+
+    # Legend – small, out of the way
+    ax.legend(loc="lower left", frameon=True, fancybox=True, framealpha=0.95,
+              edgecolor="#eeeeee", fontsize=8.5, borderpad=0.8,
+              handlelength=2.2)
+
     st.pyplot(fig)
     plt.close(fig)
 

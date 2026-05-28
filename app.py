@@ -55,38 +55,52 @@ st.markdown(
 # ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
-st.sidebar.header("Parâmetros Gerais")
-
-V = st.sidebar.number_input(
-    "Valor de Aluguel (R$)", min_value=0.0, max_value=100_000.0,
-    value=3_000.0, step=100.0, format="%.0f",
-    help="Valor mensal do aluguel – multiplica todo o resultado",
+st.sidebar.markdown(
+    "<h3 style='margin-bottom:4px'>Parâmetros Gerais</h3>",
+    unsafe_allow_html=True,
 )
 
-R_annual_pct = st.sidebar.slider(
-    "Taxa livre de risco (a.a.)", 0.0, 15.0, 10.0, 0.25,
-    format="%.2f%%",
-    help="Taxa anual; capitalizada mensalmente por 12 meses até o vencimento",
-)
+with st.sidebar.container(border=True):
+    V = st.number_input(
+        "Valor de Aluguel (R$)", min_value=0.0, max_value=100_000.0,
+        value=3_000.0, step=100.0, format="%.0f",
+        help="Valor mensal do aluguel – multiplica todo o resultado",
+    )
+    R_annual_pct = st.slider(
+        "Taxa livre de risco (a.a.)", 0.0, 15.0, 10.0, 0.25,
+        format="%.2f%%",
+        help="Taxa anual; capitalizada mensalmente por 12 meses até o vencimento",
+    )
+
 R_annual = R_annual_pct / 100
 # Compound monthly for 12 months
 compound_factor = (1 + R_annual / 12) ** 12
 
-st.sidebar.markdown("---")
-st.sidebar.header("Contratos por Teto")
+st.sidebar.markdown("")
+st.sidebar.markdown(
+    "<h3 style='margin-bottom:4px'>Contratos por Teto</h3>",
+    unsafe_allow_html=True,
+)
 
 params = {}
 for lam in LAMBDAS:
     label = f"{lam:.0%}"
-    st.sidebar.subheader(f"Teto (λ) = {label}")
-    N = st.sidebar.slider(
-        f"Quantidade de Contratos – Teto {label}", 0, 1000, 500, 10,
-        key=f"N_{label}",
+    color = LAMBDA_COLORS[label]
+    st.sidebar.markdown(
+        f"<div style='border-left:3px solid {color}; padding-left:8px; "
+        f"margin-bottom:2px; margin-top:12px'>"
+        f"<strong style='color:{color}'>Teto (λ) = {label}</strong></div>",
+        unsafe_allow_html=True,
     )
-    P = st.sidebar.slider(
-        f"Preço Venda – Teto {label}", 0.0, 0.50, 0.10, 0.005,
-        format="%.3f", key=f"P_{label}",
-    )
+    with st.sidebar.container(border=True):
+        N = st.slider(
+            f"Quantidade de Contratos", 0, 1000, 500, 10,
+            key=f"N_{label}",
+        )
+        P = st.slider(
+            f"Preço Venda", 0.0, 0.50, 0.10, 0.005,
+            format="%.3f", key=f"P_{label}",
+        )
     params[label] = {"N": N, "P": P, "lam": lam}
 
 # ---------------------------------------------------------------------------

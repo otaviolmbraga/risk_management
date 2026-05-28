@@ -324,7 +324,7 @@ with tab_binario:
         "<h4 style='margin-bottom:0'>Parâmetros do Hedge Binário</h4>"
         "<p style='color:#888; font-size:0.9em; margin-top:0'>"
         "Paga q, recebe (1 − q) se π &gt; π̄ — payoff líquido por unidade: "
-        "−q se π ≤ π̄, (1 − 2q) se π &gt; π̄</p>",
+        "−q se π ≤ π̄, (1 − q) se π &gt; π̄</p>",
         unsafe_allow_html=True,
     )
 
@@ -337,7 +337,7 @@ with tab_binario:
         )
     with cb2:
         q = st.slider(
-            "Custo do contrato (q)", 0.0, 1.0, 0.20, 0.01,
+            "Custo do contrato (q)", 0.0, 0.50, 0.20, 0.01,
             format="%.2f", key="q_bin",
             help="Preço pago por unidade; recebe (1 − q) se π > π̄",
         )
@@ -349,8 +349,8 @@ with tab_binario:
         )
 
     pi_bar_bin = pi_bar_bin_pct / 100
-    # Payoff per unit: -q always (cost), +(1-q) if π > π̄
-    bin_payoff = notional_bin * np.where(pi > pi_bar_bin, 1 - 2 * q, -q)
+    # Pay q, receive (1-q) if π > π̄
+    bin_payoff = notional_bin * np.where(pi > pi_bar_bin, 1 - q, -q)
     combined_bin = total_profit + bin_payoff
 
     fig, ax = make_figure()

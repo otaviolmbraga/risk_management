@@ -1,125 +1,193 @@
 """
-Interactive Risk Management Dashboard
-Visualizes insurer profit for the short-rental inflation-cap product.
+Painel Interativo de Gestão de Risco
+Lucro do segurador no produto de cap de inflação para aluguel de curta duração.
 
-Profit_λ(π) = N_λ × [P_λ × (1+R) − 12 × max(π − λ, 0)]
+Lucro_λ(π) = V × N_λ × [P_λ × (1 + R/12)^12 − 12 × max(π − λ, 0)]
 """
 
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+from matplotlib import rcParams
 
 # ---------------------------------------------------------------------------
-# Config
+# Style
 # ---------------------------------------------------------------------------
+rcParams.update({
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Inter", "Helvetica Neue", "Arial", "sans-serif"],
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.edgecolor": "#cccccc",
+    "axes.linewidth": 0.6,
+    "xtick.color": "#555555",
+    "ytick.color": "#555555",
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
+    "axes.labelsize": 11,
+    "axes.labelcolor": "#333333",
+    "axes.titlesize": 13,
+    "axes.titleweight": "bold",
+    "figure.facecolor": "#fafafa",
+    "axes.facecolor": "#fafafa",
+    "grid.color": "#e0e0e0",
+    "grid.linewidth": 0.5,
+    "grid.linestyle": "--",
+})
+
 LAMBDAS = [0.06, 0.07, 0.08]
-COLORS = {"6%": "#1f77b4", "7%": "#ff7f0e", "8%": "#2ca02c"}
-TOTAL_COLOR = "#d62728"
-PI_MIN, PI_MAX, PI_POINTS = 0.0, 0.25, 500
-
-st.set_page_config(page_title="Risk Management Dashboard", layout="wide")
-st.title("Insurer Profit – Short-Rental Inflation Cap")
+LAMBDA_COLORS = {"6%": "#5B8DEF", "7%": "#F5A623", "8%": "#4CD964"}
+TOTAL_COLOR = "#1A1A2E"
+FILL_COLOR = "#1A1A2E"
+PI_MIN, PI_MAX, PI_POINTS = 0.03, 0.12, 600
 
 # ---------------------------------------------------------------------------
-# Sidebar controls
+# Page config
 # ---------------------------------------------------------------------------
-st.sidebar.header("Parameters")
+st.set_page_config(page_title="Gestão de Risco – Cap Inflação", layout="wide")
+st.markdown(
+    "<h1 style='margin-bottom:0'>Painel de Gestão de Risco</h1>"
+    "<p style='color:#888; margin-top:0'>Produto de cap de inflação para aluguel de curta duração</p>",
+    unsafe_allow_html=True,
+)
 
-R = st.sidebar.slider("Risk-free rate R", 0.0, 0.20, 0.10, 0.005, format="%.1f%%",
-                       help="Annual risk-free rate applied to premium income")
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+st.sidebar.header("Parâmetros Gerais")
+
+V = st.sidebar.number_input(
+    "Valor de Aluguel (R$)", min_value=0.0, max_value=100_000.0,
+    value=3_000.0, step=100.0, format="%.0f",
+    help="Valor mensal do aluguel – multiplica todo o resultado",
+)
+
+R_annual = st.sidebar.slider(
+    "Taxa livre de risco (a.a.)", 0.0, 0.15, 0.10, 0.0025,
+    format="%.2f%%",
+    help="Taxa anual; capitalizada mensalmente por 12 meses até o vencimento",
+)
+# Compound monthly for 12 months
+compound_factor = (1 + R_annual / 12) ** 12
+
+st.sidebar.markdown("---")
+st.sidebar.header("Contratos por Teto")
 
 params = {}
 for lam in LAMBDAS:
     label = f"{lam:.0%}"
-    st.sidebar.subheader(f"λ = {label}")
-    N = st.sidebar.slider(f"N  (contracts) – λ={label}", 0, 1000, 500, 10,
-                          key=f"N_{label}")
-    P = st.sidebar.slider(f"P  (premium)   – λ={label}", 0.0, 0.50, 0.10, 0.005,
-                          format="%.3f", key=f"P_{label}")
+    st.sidebar.subheader(f"Teto (λ) = {label}")
+    N = st.sidebar.slider(
+        f"Quantidade de Contratos – Teto {label}", 0, 1000, 500, 10,
+        key=f"N_{label}",
+    )
+    P = st.sidebar.slider(
+        f"Preço Venda – Teto {label}", 0.0, 0.50, 0.10, 0.005,
+        format="%.3f", key=f"P_{label}",
+    )
     params[label] = {"N": N, "P": P, "lam": lam}
 
 # ---------------------------------------------------------------------------
-# Compute profit curves
+# Compute
 # ---------------------------------------------------------------------------
 pi = np.linspace(PI_MIN, PI_MAX, PI_POINTS)
-profits = {}
 total_profit = np.zeros_like(pi)
 
-for label, p in params.items():
+for p in params.values():
     N, P, lam = p["N"], p["P"], p["lam"]
-    profit = N * (P * (1 + R) - 12 * np.maximum(pi - lam, 0))
-    profits[label] = profit
-    total_profit += profit
+    total_profit += V * N * (P * compound_factor - 12 * np.maximum(pi - lam, 0))
 
 # ---------------------------------------------------------------------------
 # Plot
 # ---------------------------------------------------------------------------
-fig, ax = plt.subplots(figsize=(10, 5))
+fig, ax = plt.subplots(figsize=(11, 5))
 
-for label, profit in profits.items():
-    ax.plot(pi, profit, color=COLORS[label], linewidth=2, label=f"λ = {label}")
+# Shaded region: green above zero, red below
+ax.fill_between(pi, total_profit, 0,
+                where=(total_profit >= 0),
+                color="#4CD964", alpha=0.12, interpolate=True)
+ax.fill_between(pi, total_profit, 0,
+                where=(total_profit < 0),
+                color="#FF3B30", alpha=0.10, interpolate=True)
 
-ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=2.5, linestyle="--",
-        label="Total portfolio")
-ax.axhline(0, color="grey", linewidth=0.8, linestyle="--")
+# Main line
+ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=2.4, zorder=5,
+        label="Lucro Total da Carteira")
 
-ax.set_xlabel("Realized inflation π")
-ax.set_ylabel("Profit")
+# Zero line
+ax.axhline(0, color="#999999", linewidth=0.7, linestyle="-", zorder=2)
+
+# Vertical dashed lines at each lambda
+for lam in LAMBDAS:
+    label = f"{lam:.0%}"
+    ax.axvline(lam, color=LAMBDA_COLORS[label], linewidth=1.2, linestyle="--",
+               alpha=0.7, zorder=3)
+    # Label just above the x-axis
+    y_pos = ax.get_ylim()[1] * 0.95
+    ax.text(lam + 0.001, y_pos, f"Teto {label}",
+            color=LAMBDA_COLORS[label], fontsize=9, fontweight="bold",
+            va="top", ha="left", alpha=0.85)
+
+ax.set_xlabel("Inflação Realizada (π)")
+ax.set_ylabel("Lucro (R$)")
 ax.xaxis.set_major_formatter(mtick.PercentFormatter(1.0, 0))
-ax.legend()
+ax.yaxis.set_major_formatter(
+    mtick.FuncFormatter(lambda x, _: f"R$ {x:,.0f}".replace(",", "."))
+)
 ax.set_xlim(PI_MIN, PI_MAX)
-ax.set_title("Profit vs. realized inflation")
-fig.tight_layout()
+ax.grid(True, axis="y", zorder=0)
+ax.set_title("Lucro Total vs. Inflação Realizada")
 
+# Minimal legend
+ax.legend(loc="upper right", frameon=True, fancybox=True, framealpha=0.9,
+          edgecolor="#dddddd", fontsize=9)
+
+fig.tight_layout()
 st.pyplot(fig)
 plt.close(fig)
 
 # ---------------------------------------------------------------------------
-# Summary table – breakeven π for each lambda and total portfolio
+# Summary table
 # ---------------------------------------------------------------------------
-st.subheader("Breakeven inflation")
+st.subheader("Pontos de Equilíbrio (Break-even)")
 
 
-def breakeven_single(N, P, lam, R):
-    """π where profit crosses zero: P(1+R)/(12) + λ, provided N > 0."""
+def breakeven_single(N, P, lam, cf):
     if N == 0:
         return None
-    return lam + P * (1 + R) / 12
+    return lam + P * cf / 12
 
 
-def breakeven_total(params, R, pi):
-    """Numerical breakeven of the summed profit curve (first zero-crossing)."""
+def breakeven_total(params, cf, V, pi):
     total = np.zeros_like(pi)
     for p in params.values():
         N, P, lam = p["N"], p["P"], p["lam"]
-        total += N * (P * (1 + R) - 12 * np.maximum(pi - lam, 0))
-    # Find first sign change from positive to negative
+        total += V * N * (P * cf - 12 * np.maximum(pi - lam, 0))
     sign_changes = np.where(np.diff(np.sign(total)) < 0)[0]
     if len(sign_changes) == 0:
         return None
     idx = sign_changes[0]
-    # Linear interpolation between idx and idx+1
     t = total[idx] / (total[idx] - total[idx + 1])
     return pi[idx] + t * (pi[idx + 1] - pi[idx])
 
 
 rows = []
 for label, p in params.items():
-    be = breakeven_single(p["N"], p["P"], p["lam"], R)
+    be = breakeven_single(p["N"], p["P"], p["lam"], compound_factor)
     rows.append({
-        "λ": label,
-        "N": p["N"],
-        "Premium": f"{p['P']:.3f}",
-        "Breakeven π": f"{be:.2%}" if be is not None else "N/A",
+        "Teto (λ)": label,
+        "Qtd Contratos": p["N"],
+        "Preço Venda": f"{p['P']:.3f}",
+        "Break-even (π)": f"{be:.2%}" if be is not None else "N/A",
     })
 
-be_total = breakeven_total(params, R, pi)
+be_total = breakeven_total(params, compound_factor, V, pi)
 rows.append({
-    "λ": "Total",
-    "N": sum(p["N"] for p in params.values()),
-    "Premium": "—",
-    "Breakeven π": f"{be_total:.2%}" if be_total is not None else "N/A",
+    "Teto (λ)": "Carteira",
+    "Qtd Contratos": sum(p["N"] for p in params.values()),
+    "Preço Venda": "—",
+    "Break-even (π)": f"{be_total:.2%}" if be_total is not None else "N/A",
 })
 
 st.table(rows)

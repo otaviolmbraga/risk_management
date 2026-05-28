@@ -340,8 +340,9 @@ with tab_binario:
     st.markdown(
         "<h4 style='margin-bottom:0'>Parâmetros do Hedge Binário</h4>"
         "<p style='color:#888; font-size:0.9em; margin-top:0'>"
-        "Paga q, recebe (1 − q) se π &gt; π̄ — payoff líquido por unidade: "
-        "−q se π ≤ π̄, (1 − q) se π &gt; π̄</p>",
+        "Paga q, recebe (1 − q) se π &gt; π̄. O <b>Razão de Hedge</b> "
+        "define quanto da perda máxima da carteira (em π = 10%) é coberto "
+        "pelo payoff (100% = perda totalmente coberta se gatilho ativado).</p>",
         unsafe_allow_html=True,
     )
 
@@ -359,16 +360,23 @@ with tab_binario:
             help="Preço pago por unidade; recebe (1 − q) se π > π̄",
         )
     with cb3:
-        notional_bin = st.number_input(
-            "Notional (R$)", min_value=0.0, max_value=50_000_000.0,
-            value=500_000.0, step=50_000.0, format="%.0f", key="notional_bin",
-            help="Valor nocional do hedge binário",
+        hedge_ratio_bin = st.slider(
+            "Razão de Hedge", 0, 200, 100, 5,
+            format="%d%%", key="hr_bin",
+            help="100% = payoff cobre toda a perda da carteira em π = 10%",
         )
 
     pi_bar_bin = pi_bar_bin_pct / 100
+    # notional so that (1-q) × notional = hedge_ratio × |loss at pi_max|
+    if (1 - q) > 0 and _portfolio_loss_at_max > 0:
+        notional_bin = (hedge_ratio_bin / 100) * _portfolio_loss_at_max / (1 - q)
+    else:
+        notional_bin = 0.0
     # Pay q, receive (1-q) if π > π̄
     bin_payoff = notional_bin * np.where(pi > pi_bar_bin, 1 - q, -q)
     combined_bin = total_profit + bin_payoff
+
+    st.caption(f"Notional implícito: R$ {notional_bin:,.0f}".replace(",", "."))
 
     fig, ax = make_figure()
 

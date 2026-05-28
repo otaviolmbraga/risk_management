@@ -373,8 +373,8 @@ with tab_binario:
         "<h4 style='margin-bottom:0'>Parâmetros do Hedge Binário</h4>"
         "<p style='color:#888; font-size:0.9em; margin-top:0'>"
         "Paga q, recebe (1 − q) se π &gt; π̄. O <b>Razão de Hedge</b> "
-        "define o nocional relativo à perda máxima da carteira (em π = 10%). "
-        "O parâmetro q determina custo vs. payoff.</p>",
+        "define quanto da perda máxima da carteira (em π = 10%) é coberto "
+        "pelo payoff (100% = perda totalmente coberta se gatilho ativado).</p>",
         unsafe_allow_html=True,
     )
 
@@ -399,9 +399,11 @@ with tab_binario:
         )
 
     pi_bar_bin = pi_bar_bin_pct / 100
-    # notional = hedge_ratio × |loss at pi_max|
-    # q then determines the split: cost = q × notional, payoff = (1-q) × notional
-    notional_bin = (hedge_ratio_bin / 100) * _portfolio_loss_at_max
+    # notional so that (1-q) × notional = hedge_ratio × |loss at pi_max|
+    if (1 - q) > 0 and _portfolio_loss_at_max > 0:
+        notional_bin = (hedge_ratio_bin / 100) * _portfolio_loss_at_max / (1 - q)
+    else:
+        notional_bin = 0.0
     # Pay q, receive (1-q) if π > π̄
     bin_payoff = notional_bin * np.where(pi > pi_bar_bin, 1 - q, -q)
     combined_bin = total_profit + bin_payoff

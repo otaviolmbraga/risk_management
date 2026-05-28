@@ -276,9 +276,142 @@ def summary_table(params, compound_factor, V, pi, extra_curve=None):
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_sem, tab_linear, tab_binario, tab_resumo = st.tabs([
-    "Sem Hedge", "Hedge Linear", "Hedge Binário", "Resumo",
+tab_intro, tab_sem, tab_linear, tab_binario, tab_resumo = st.tabs([
+    "Introdução", "Sem Hedge", "Hedge Linear", "Hedge Binário", "Resumo",
 ])
+
+# ---- Tab 0: Introdução ---------------------------------------------------
+with tab_intro:
+    st.markdown(
+        """
+        <style>
+        .intro-section {
+            background: #f8f9fb;
+            border-radius: 10px;
+            padding: 24px 28px;
+            margin-bottom: 16px;
+            border: 1px solid #eaedf2;
+        }
+        .intro-section h3 {
+            margin-top: 0;
+            margin-bottom: 6px;
+            font-size: 1.1em;
+            color: #1A1A2E;
+        }
+        .intro-section p {
+            color: #555;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+        .intro-formula {
+            background: #1A1A2E;
+            color: #e8e8e8;
+            border-radius: 8px;
+            padding: 14px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            margin: 12px 0 6px 0;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+        .intro-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            margin-top: 8px;
+        }
+        .intro-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 22px;
+            border: 1px solid #eaedf2;
+        }
+        .intro-card .card-icon {
+            font-size: 1.4em;
+            margin-bottom: 6px;
+        }
+        .intro-card h4 {
+            margin: 0 0 6px 0;
+            font-size: 1em;
+            color: #1A1A2E;
+        }
+        .intro-card p {
+            color: #666;
+            font-size: 0.88em;
+            line-height: 1.55;
+            margin: 0;
+        }
+        .intro-card code {
+            background: #f0f2f6;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.92em;
+            color: #1A1A2E;
+        }
+        </style>
+
+        <div class="intro-section">
+            <h3>O Produto</h3>
+            <p>
+                Uma seguradora vende contratos que protegem locatários contra
+                inflação acima de um <b>teto (λ)</b>. Se a inflação realizada
+                π superar λ, a seguradora paga a diferença — 12 parcelas de
+                (π − λ) por contrato, multiplicadas pelo valor do aluguel.
+            </p>
+            <div class="intro-formula">
+                Lucro<sub>λ</sub>(π) = V × N<sub>λ</sub> × [ P<sub>λ</sub> × (1 + R/12)<sup>12</sup> − 12 × max(π − λ, 0) ]
+            </div>
+            <p style="font-size:0.85em; color:#888; margin-top:4px">
+                V = valor do aluguel · N = contratos vendidos · P = preço de venda · R = taxa livre de risco
+            </p>
+        </div>
+
+        <div class="intro-section">
+            <h3>As Abas</h3>
+            <div class="intro-cards">
+                <div class="intro-card">
+                    <div class="card-icon">📊</div>
+                    <h4>Sem Hedge</h4>
+                    <p>
+                        Lucro da carteira sem nenhuma proteção.
+                        Mostra como o resultado deteriora à medida que
+                        a inflação supera os tetos contratados.
+                    </p>
+                </div>
+                <div class="intro-card">
+                    <div class="card-icon">📈</div>
+                    <h4>Hedge Linear</h4>
+                    <p>
+                        Contrato futuro de inflação a uma taxa π̄.
+                        Payoff: <code>Notional × (π − π̄)</code>.
+                        A <b>razão de hedge</b> define quanto da inclinação
+                        negativa da carteira é compensada.
+                    </p>
+                </div>
+                <div class="intro-card">
+                    <div class="card-icon">🎯</div>
+                    <h4>Hedge Binário</h4>
+                    <p>
+                        Opção binária que paga <code>(1 − q)</code> se
+                        π &gt; π̄, custando <code>q</code> por unidade.
+                        A <b>razão de hedge</b> define a cobertura
+                        relativa à perda máxima da carteira.
+                    </p>
+                </div>
+                <div class="intro-card">
+                    <div class="card-icon">📋</div>
+                    <h4>Resumo</h4>
+                    <p>
+                        Tabela com os pontos de equilíbrio (break-even)
+                        para cada teto e para a carteira total.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ---- Tab 1: Sem Hedge ----------------------------------------------------
 with tab_sem:

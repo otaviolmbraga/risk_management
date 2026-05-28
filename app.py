@@ -316,9 +316,79 @@ with tab_linear:
     st.pyplot(fig)
     plt.close(fig)
 
-# ---- Tab 3: Hedge Binário (placeholder) ----------------------------------
+# ---- Tab 3: Hedge Binário ------------------------------------------------
+BINARY_COLOR = "#E67E22"
+
 with tab_binario:
-    st.info("Em breve – Hedge Binário será implementado aqui.")
+    st.markdown(
+        "<h4 style='margin-bottom:0'>Parâmetros do Hedge Binário</h4>"
+        "<p style='color:#888; font-size:0.9em; margin-top:0'>"
+        "Paga q, recebe (1 − q) se π &gt; π̄ — payoff líquido por unidade: "
+        "−q se π ≤ π̄, (1 − 2q) se π &gt; π̄</p>",
+        unsafe_allow_html=True,
+    )
+
+    cb1, cb2, cb3 = st.columns(3)
+    with cb1:
+        pi_bar_bin_pct = st.slider(
+            "Inflação gatilho π̄", 3.0, 10.0, 7.0, 0.25,
+            format="%.2f%%", key="pi_bar_bin",
+            help="Se a inflação realizada superar esse nível, o hedge paga",
+        )
+    with cb2:
+        q = st.slider(
+            "Custo do contrato (q)", 0.0, 1.0, 0.20, 0.01,
+            format="%.2f", key="q_bin",
+            help="Preço pago por unidade; recebe (1 − q) se π > π̄",
+        )
+    with cb3:
+        notional_bin = st.number_input(
+            "Notional (R$)", min_value=0.0, max_value=50_000_000.0,
+            value=500_000.0, step=50_000.0, format="%.0f", key="notional_bin",
+            help="Valor nocional do hedge binário",
+        )
+
+    pi_bar_bin = pi_bar_bin_pct / 100
+    # Payoff per unit: -q always (cost), +(1-q) if π > π̄
+    bin_payoff = notional_bin * np.where(pi > pi_bar_bin, 1 - 2 * q, -q)
+    combined_bin = total_profit + bin_payoff
+
+    fig, ax = make_figure()
+
+    # Unhedged – ghost
+    ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=1.4, alpha=0.25,
+            linestyle="--", zorder=4, label="Sem Hedge",
+            solid_capstyle="round")
+
+    # Binary hedge payoff alone
+    ax.plot(pi, bin_payoff, color=BINARY_COLOR, linewidth=1.2, alpha=0.4,
+            linestyle=":", zorder=4, label="Payoff do Hedge",
+            solid_capstyle="round", drawstyle="steps-post")
+
+    # Combined
+    draw_fill(ax, pi, combined_bin)
+    ax.plot(pi, combined_bin, color=COMBINED_COLOR, linewidth=2.6, zorder=5,
+            label="Lucro com Hedge", solid_capstyle="round")
+
+    style_ax(ax, "Lucro com Hedge Binário vs. Inflação Realizada")
+
+    # π̄ marker
+    ax.axvline(pi_bar_bin, color=BINARY_COLOR, linewidth=0.9, linestyle="--",
+               alpha=0.5, zorder=3)
+    ymax = ax.get_ylim()[1]
+    ax.text(pi_bar_bin, ymax, f" π̄ = {pi_bar_bin:.2%}",
+            color=BINARY_COLOR, fontsize=8.5, fontweight="600",
+            va="bottom", ha="left", alpha=0.8,
+            path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
+
+    draw_breakeven_dot(ax, pi, combined_bin)
+
+    ax.legend(loc="lower left", frameon=True, fancybox=True, framealpha=0.95,
+              edgecolor="#eeeeee", fontsize=8.5, borderpad=0.8,
+              handlelength=2.2)
+
+    st.pyplot(fig)
+    plt.close(fig)
 
 # ---- Tab 4: Resumo -------------------------------------------------------
 with tab_resumo:

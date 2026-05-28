@@ -44,6 +44,8 @@ rcParams.update({
     "grid.color": GRID_CLR,
     "grid.linewidth": 0.6,
     "grid.linestyle": "-",
+    "figure.dpi": 200,
+    "savefig.dpi": 200,
 })
 
 LAMBDAS = [0.06, 0.07, 0.08]
@@ -286,7 +288,7 @@ with tab_sem:
             solid_capstyle="round")
     style_ax(ax, "Lucro da Carteira vs. Inflação Realizada")
     draw_breakeven_dot(ax, pi, total_profit)
-    st.pyplot(fig)
+    st.pyplot(fig, dpi=200)
     plt.close(fig)
 
 # ---- Tab 2: Hedge Linear -------------------------------------------------
@@ -360,7 +362,7 @@ with tab_linear:
               edgecolor="#eeeeee", fontsize=8.5, borderpad=0.8,
               handlelength=2.2)
 
-    st.pyplot(fig)
+    st.pyplot(fig, dpi=200)
     plt.close(fig)
 
 # ---- Tab 3: Hedge Binário ------------------------------------------------
@@ -442,7 +444,7 @@ with tab_binario:
               edgecolor="#eeeeee", fontsize=8.5, borderpad=0.8,
               handlelength=2.2)
 
-    st.pyplot(fig)
+    st.pyplot(fig, dpi=200)
     plt.close(fig)
 
 # ---- Tab 4: Resumo -------------------------------------------------------

@@ -63,11 +63,12 @@ V = st.sidebar.number_input(
     help="Valor mensal do aluguel – multiplica todo o resultado",
 )
 
-R_annual = st.sidebar.slider(
-    "Taxa livre de risco (a.a.)", 0.0, 0.15, 0.10, 0.0025,
+R_annual_pct = st.sidebar.slider(
+    "Taxa livre de risco (a.a.)", 0.0, 15.0, 10.0, 0.25,
     format="%.2f%%",
     help="Taxa anual; capitalizada mensalmente por 12 meses até o vencimento",
 )
+R_annual = R_annual_pct / 100
 # Compound monthly for 12 months
 compound_factor = (1 + R_annual / 12) ** 12
 

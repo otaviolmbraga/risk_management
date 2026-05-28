@@ -260,11 +260,18 @@ with tab_sem:
     plt.close(fig)
 
 # ---- Tab 2: Hedge Linear -------------------------------------------------
+# Portfolio worst-case slope (all caps breached): -12 × V × ΣN_λ per unit of π
+_total_N = sum(p["N"] for p in params.values())
+_portfolio_slope = 12 * V * _total_N          # positive number
+_portfolio_loss_at_max = -total_profit[-1] if total_profit[-1] < 0 else 0.0
+
 with tab_linear:
     st.markdown(
         "<h4 style='margin-bottom:0'>Parâmetros do Hedge Linear</h4>"
         "<p style='color:#888; font-size:0.9em; margin-top:0'>"
-        "Payoff = Notional × (π − π̄) na data de liquidação</p>",
+        "Payoff = Notional × (π − π̄). O <b>Razão de Hedge</b> define "
+        "quanto da inclinação negativa da carteira é compensado "
+        "(100% = inclinação totalmente neutralizada).</p>",
         unsafe_allow_html=True,
     )
 
@@ -276,15 +283,18 @@ with tab_linear:
             help="Taxa de inflação negociada no contrato futuro",
         )
     with col2:
-        notional = st.number_input(
-            "Notional (R$)", min_value=0.0, max_value=50_000_000.0,
-            value=500_000.0, step=50_000.0, format="%.0f", key="notional",
-            help="Valor nocional do hedge linear",
+        hedge_ratio_lin = st.slider(
+            "Razão de Hedge", 0, 200, 100, 5,
+            format="%d%%", key="hr_lin",
+            help="100% = hedge compensa toda a inclinação negativa da carteira",
         )
 
     pi_bar = pi_bar_pct / 100
+    notional = (hedge_ratio_lin / 100) * _portfolio_slope
     hedge_payoff = notional * (pi - pi_bar)
     combined = total_profit + hedge_payoff
+
+    st.caption(f"Notional implícito: R$ {notional:,.0f}".replace(",", "."))
 
     fig, ax = make_figure()
 

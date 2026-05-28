@@ -1,6 +1,6 @@
 """
 Painel Interativo de Gestão de Risco
-Lucro do segurador no produto de cap de inflação para aluguel de curta duração.
+Lucro da empresa no produto de cap de inflação para aluguel de curta duração.
 
 Lucro_λ(π) = V × N_λ × [P_λ × (1 + R/12)^12 − 12 × max(π − λ, 0)]
 """
@@ -354,9 +354,9 @@ with tab_intro:
         <div class="intro-section">
             <h3>O Produto</h3>
             <p>
-                Uma seguradora vende contratos que protegem locatários contra
+                A empresa vende contratos que protegem locatários contra
                 inflação acima de um <b>teto (λ)</b>. Se a inflação realizada
-                π superar λ, a seguradora paga a diferença — 12 parcelas de
+                π superar λ, a empresa paga a diferença — 12 parcelas de
                 (π − λ) por contrato, multiplicadas pelo valor do aluguel.
             </p>
             <div class="intro-formula">

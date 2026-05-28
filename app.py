@@ -170,8 +170,15 @@ def draw_fill(ax, pi, profit):
                     color=RED_FILL, alpha=0.08, interpolate=True)
 
 
+def _pad_ylim(ax, top_frac=0.15, bot_frac=0.10):
+    """Add vertical padding so labels don't sit on top of data."""
+    ymin, ymax = ax.get_ylim()
+    span = ymax - ymin
+    ax.set_ylim(ymin - span * bot_frac, ymax + span * top_frac)
+
+
 def draw_lambda_markers(ax):
-    """Vertical dashed lines + labels at each teto."""
+    """Vertical dashed lines + labels at the TOP of the plot."""
     ymin, ymax = ax.get_ylim()
     for lam in LAMBDAS:
         lab = f"{lam:.0%}"
@@ -180,7 +187,7 @@ def draw_lambda_markers(ax):
                    alpha=0.55, zorder=3)
         ax.text(lam, ymax, f" Teto {lab}",
                 color=clr, fontsize=8.5, fontweight="600",
-                va="bottom", ha="left", alpha=0.8,
+                va="top", ha="left", alpha=0.8,
                 path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
 
 
@@ -194,6 +201,7 @@ def style_ax(ax, title):
     ax.set_xlim(PI_MIN, PI_MAX)
     ax.grid(True, axis="both", zorder=0)
     ax.set_title(title, loc="left")
+    _pad_ylim(ax)
     draw_lambda_markers(ax)
 
 
@@ -297,18 +305,17 @@ with tab_linear:
 
     style_ax(ax, "Lucro com Hedge Linear vs. Inflação Realizada")
 
-    # π̄ marker
+    # π̄ marker – label at bottom so it doesn't clash with Teto labels
     ax.axvline(pi_bar, color=HEDGE_COLOR, linewidth=0.9, linestyle="--",
                alpha=0.5, zorder=3)
-    ymax = ax.get_ylim()[1]
-    ax.text(pi_bar, ymax, f" π̄ = {pi_bar:.2%}",
+    ymin = ax.get_ylim()[0]
+    ax.text(pi_bar, ymin, f" π̄ = {pi_bar:.2%}",
             color=HEDGE_COLOR, fontsize=8.5, fontweight="600",
             va="bottom", ha="left", alpha=0.8,
             path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
 
     draw_breakeven_dot(ax, pi, combined)
 
-    # Legend – small, out of the way
     ax.legend(loc="lower left", frameon=True, fancybox=True, framealpha=0.95,
               edgecolor="#eeeeee", fontsize=8.5, borderpad=0.8,
               handlelength=2.2)
@@ -372,11 +379,11 @@ with tab_binario:
 
     style_ax(ax, "Lucro com Hedge Binário vs. Inflação Realizada")
 
-    # π̄ marker
+    # π̄ marker – label at bottom
     ax.axvline(pi_bar_bin, color=BINARY_COLOR, linewidth=0.9, linestyle="--",
                alpha=0.5, zorder=3)
-    ymax = ax.get_ylim()[1]
-    ax.text(pi_bar_bin, ymax, f" π̄ = {pi_bar_bin:.2%}",
+    ymin = ax.get_ylim()[0]
+    ax.text(pi_bar_bin, ymin, f" π̄ = {pi_bar_bin:.2%}",
             color=BINARY_COLOR, fontsize=8.5, fontweight="600",
             va="bottom", ha="left", alpha=0.8,
             path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])

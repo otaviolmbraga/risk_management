@@ -58,10 +58,40 @@ PI_MIN, PI_MAX, PI_POINTS = 0.03, 0.10, 600
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="Gestão de Risco – Cap Inflação", layout="wide")
+st.set_page_config(page_title="Gestão de Risco – Cap Inflação", layout="wide",
+                   initial_sidebar_state="collapsed")
 st.markdown(
     "<h1 style='margin-bottom:0'>Painel de Gestão de Risco</h1>"
     "<p style='color:#888; margin-top:0'>Produto de cap de inflação para aluguel de curta duração</p>",
+    unsafe_allow_html=True,
+)
+
+# Mobile hint — only visible on narrow screens via CSS media query
+st.markdown(
+    """
+    <style>
+    .mobile-hint {
+        display: none;
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+        border: 1px solid #c5d5f0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        font-size: 0.9em;
+        color: #444;
+        text-align: center;
+    }
+    .mobile-hint span { font-size: 1.1em; }
+    @media (max-width: 768px) {
+        .mobile-hint { display: block; }
+    }
+    </style>
+    <div class="mobile-hint">
+        <span>☰</span> Toque no menu <b>no canto superior esquerdo</b>
+        para ajustar os parâmetros da carteira
+        (Valor de Aluguel, Taxa, Contratos por Teto)
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 

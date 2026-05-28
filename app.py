@@ -236,8 +236,8 @@ def summary_table(params, compound_factor, V, pi, extra_curve=None):
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_sem, tab_linear, tab_binario = st.tabs([
-    "Sem Hedge", "Hedge Linear", "Hedge Binário",
+tab_sem, tab_linear, tab_binario, tab_resumo = st.tabs([
+    "Sem Hedge", "Hedge Linear", "Hedge Binário", "Resumo",
 ])
 
 # ---- Tab 1: Sem Hedge ----------------------------------------------------
@@ -250,9 +250,6 @@ with tab_sem:
     draw_breakeven_dot(ax, pi, total_profit)
     st.pyplot(fig)
     plt.close(fig)
-
-    st.subheader("Pontos de Equilíbrio (Break-even)")
-    summary_table(params, compound_factor, V, pi)
 
 # ---- Tab 2: Hedge Linear -------------------------------------------------
 with tab_linear:
@@ -319,9 +316,11 @@ with tab_linear:
     st.pyplot(fig)
     plt.close(fig)
 
-    st.subheader("Pontos de Equilíbrio (Break-even)")
-    summary_table(params, compound_factor, V, pi, extra_curve=combined)
-
 # ---- Tab 3: Hedge Binário (placeholder) ----------------------------------
 with tab_binario:
     st.info("Em breve – Hedge Binário será implementado aqui.")
+
+# ---- Tab 4: Resumo -------------------------------------------------------
+with tab_resumo:
+    st.subheader("Pontos de Equilíbrio (Break-even)")
+    summary_table(params, compound_factor, V, pi)

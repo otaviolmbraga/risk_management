@@ -55,7 +55,7 @@ HEDGE_COLOR = "#9B59B6"
 COMBINED_COLOR = "#E74C3C"
 GREEN_FILL = "#34C759"
 RED_FILL = "#FF3B30"
-PI_MIN, PI_MAX, PI_POINTS = 0.03, 0.10, 600
+PI_MIN, PI_MAX, PI_POINTS = 0.02, 0.12, 600
 
 # ---------------------------------------------------------------------------
 # Page config

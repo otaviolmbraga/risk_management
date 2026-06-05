@@ -276,8 +276,8 @@ def summary_table(params, compound_factor, V, pi, extra_curve=None):
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_intro, tab_sem, tab_linear, tab_binario, tab_resumo = st.tabs([
-    "Introdução", "Sem Hedge", "Hedge Linear", "Hedge Binário", "Resumo",
+tab_intro, tab_sem, tab_linear, tab_binario, tab_opcao, tab_resumo = st.tabs([
+    "Introdução", "Sem Hedge", "Hedge Linear", "Hedge Binário", "Hedge Opção", "Resumo",
 ])
 
 # ---- Tab 0: Introdução ---------------------------------------------------
@@ -397,6 +397,17 @@ with tab_intro:
                         π &gt; π̄, custando <code>q</code> por unidade.
                         A <b>razão de hedge</b> define a cobertura
                         relativa à perda máxima da carteira.
+                    </p>
+                </div>
+                <div class="intro-card">
+                    <div class="card-icon">🛡️</div>
+                    <h4>Hedge Opção</h4>
+                    <p>
+                        Compra de um cap de inflação (opção linear).
+                        Payoff: <code>max(π − K, 0) − c</code> por unidade.
+                        Idêntico ao produto vendido pela empresa, mas
+                        do lado comprador. A <b>razão de hedge</b> define
+                        a cobertura relativa à inclinação negativa da carteira.
                     </p>
                 </div>
                 <div class="intro-card">
@@ -580,7 +591,95 @@ with tab_binario:
     st.pyplot(fig, dpi=200)
     plt.close(fig)
 
-# ---- Tab 4: Resumo -------------------------------------------------------
+# ---- Tab 4: Hedge Opção --------------------------------------------------
+OPTION_COLOR = "#2ECC71"
+
+with tab_opcao:
+    st.markdown(
+        "<h4 style='margin-bottom:0'>Parâmetros do Hedge Opção</h4>"
+        "<p style='color:#888; font-size:0.9em; margin-top:0'>"
+        "Compra de um cap de inflação (opção linear) com strike K. "
+        "Payoff por unidade: <code>max(π − K, 0) − c</code>. "
+        "A <b>Razão de Hedge</b> define quanto da inclinação negativa "
+        "da carteira é compensada pela inclinação positiva do cap "
+        "(100% = inclinação totalmente neutralizada acima de K).</p>",
+        unsafe_allow_html=True,
+    )
+
+    co1, co2, co3 = st.columns(3)
+    with co1:
+        strike_pct = st.slider(
+            "Strike (K)", 3.0, 10.0, 6.0, 0.25,
+            format="%.2f%%", key="strike_opt",
+            help="Nível de inflação a partir do qual a opção paga",
+        )
+    with co2:
+        cost_opt = st.slider(
+            "Custo por contrato (c)", 0.0, 0.50, 0.10, 0.005,
+            format="%.3f", key="cost_opt",
+            help="Preço pago por unidade de notional do cap",
+        )
+    with co3:
+        hedge_ratio_opt = st.slider(
+            "Razão de Hedge", 0, 200, 100, 5,
+            format="%d%%", key="hr_opt",
+            help="100% = inclinação do cap compensa toda a inclinação negativa da carteira",
+        )
+
+    strike = strike_pct / 100
+    # Notional: at 100% hedge ratio, the cap's slope (12 × V × notional_units)
+    # cancels the portfolio's slope (12 × V × ΣN_λ).
+    # Cap payoff per unit of notional = 12 × max(π − K, 0) − c
+    # The slope above K is 12 per unit, so notional = hedge_ratio × ΣN_λ
+    notional_opt = (hedge_ratio_opt / 100) * _total_N
+    # Payoff: V × notional × [12 × max(π − K, 0) − c]
+    # The cost c is paid upfront and doesn't compound (conservative)
+    opt_payoff = V * notional_opt * (12 * np.maximum(pi - strike, 0) - cost_opt)
+    combined_opt = total_profit + opt_payoff
+
+    st.caption(
+        f"Notional implícito: {notional_opt:,.0f} contratos  ·  "
+        f"Custo total: R$ {V * notional_opt * cost_opt:,.0f}".replace(",", ".")
+    )
+
+    fig, ax = make_figure()
+
+    # Unhedged – ghost
+    ax.plot(pi, total_profit, color=TOTAL_COLOR, linewidth=1.4, alpha=0.25,
+            linestyle="--", zorder=4, label="Sem Hedge",
+            solid_capstyle="round")
+
+    # Option hedge payoff alone
+    ax.plot(pi, opt_payoff, color=OPTION_COLOR, linewidth=1.2, alpha=0.4,
+            linestyle=":", zorder=4, label="Payoff do Hedge",
+            solid_capstyle="round")
+
+    # Combined
+    draw_fill(ax, pi, combined_opt)
+    ax.plot(pi, combined_opt, color=COMBINED_COLOR, linewidth=2.6, zorder=5,
+            label="Lucro com Hedge", solid_capstyle="round")
+
+    style_ax(ax, "Lucro com Hedge Opção vs. Inflação Realizada")
+
+    # Strike marker – label at bottom
+    ax.axvline(strike, color=OPTION_COLOR, linewidth=0.9, linestyle="--",
+               alpha=0.5, zorder=3)
+    ymin = ax.get_ylim()[0]
+    ax.text(strike, ymin, f" K = {strike:.2%}",
+            color=OPTION_COLOR, fontsize=8.5, fontweight="600",
+            va="bottom", ha="left", alpha=0.8,
+            path_effects=[pe.withStroke(linewidth=2.5, foreground=BG)])
+
+    draw_breakeven_dot(ax, pi, combined_opt)
+
+    ax.legend(loc="lower left", frameon=True, fancybox=True, framealpha=0.95,
+              edgecolor="#eeeeee", fontsize=8.5, borderpad=0.8,
+              handlelength=2.2)
+
+    st.pyplot(fig, dpi=200)
+    plt.close(fig)
+
+# ---- Tab 5: Resumo -------------------------------------------------------
 with tab_resumo:
     st.subheader("Pontos de Equilíbrio (Break-even)")
     summary_table(params, compound_factor, V, pi)
